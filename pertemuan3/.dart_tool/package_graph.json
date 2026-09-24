@@ -8,8 +8,7 @@
       "version": "1.0.0+1",
       "dependencies": [
         "cupertino_icons",
-        "flutter",
-        "intl"
+        "flutter"
       ],
       "devDependencies": [
         "flutter_lints",
@@ -39,15 +38,6 @@
         "stream_channel",
         "test_api",
         "vector_math"
-      ]
-    },
-    {
-      "name": "intl",
-      "version": "0.20.3",
-      "dependencies": [
-        "clock",
-        "meta",
-        "path"
       ]
     },
     {

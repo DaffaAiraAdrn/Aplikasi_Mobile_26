@@ -62,12 +62,6 @@
       "languageVersion": "3.10"
     },
     {
-      "name": "intl",
-      "rootUri": "file:///C:/Users/USER/AppData/Local/Pub/Cache/hosted/pub.dev/intl-0.20.3",
-      "packageUri": "lib/",
-      "languageVersion": "3.9"
-    },
-    {
       "name": "leak_tracker",
       "rootUri": "file:///C:/Users/USER/AppData/Local/Pub/Cache/hosted/pub.dev/leak_tracker-11.0.2",
       "packageUri": "lib/",
