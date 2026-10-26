@@ -1,0 +1,199 @@
+import 'package:flutter/material.dart';
+import 'database.dart';
+import 'transaction_model.dart';
+
+class AddTransactionScreen extends StatefulWidget {
+  const AddTransactionScreen({super.key});
+
+  @override
+  State<AddTransactionScreen> createState() => _AddTransactionScreenState();
+}
+
+class _AddTransactionScreenState extends State<AddTransactionScreen> {
+  // GlobalKey untuk mengontrol form dan memicu validasi
+  final _formKey = GlobalKey<FormState>();
+
+  // Controller untuk mengambil teks dari input
+  final _titleController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _dateController = TextEditingController();
+
+  // State untuk Dropdown
+  String _selectedCategory = 'Makanan';
+  final List<String> _categories = ['Makanan', 'Transportasi', 'Hiburan', 'Lainnya', 'Pemasukan'];
+
+  DateTime? _selectedDate;
+
+  Future<void> _pilihTanggal() async {
+    final DateTime? pilih = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (pilih != null) {
+      _selectedDate = pilih;
+      final day = pilih.day.toString().padLeft(2, '0');
+      final month = pilih.month.toString().padLeft(2, '0');
+      _dateController.text = '$day/$month/${pilih.year}';
+    }
+  }
+
+  @override
+  void dispose() {
+    // Bersihkan controller saat halaman ditutup untuk mencegah memory leak
+    _titleController.dispose();
+    _amountController.dispose();
+    _dateController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Catat Transaksi Baru"),
+        backgroundColor: Colors.amber,
+        foregroundColor: Colors.black,
+      ),
+      // SingleChildScrollView mencegah error layout saat keyboard muncul
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+
+              // Input 1: Judul Transaksi
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: "Judul Transaksi",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.title),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Judul transaksi tidak boleh kosong";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Input 2: Nominal Saldo (Keyboard Angka)
+              TextFormField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Nominal (Rp)",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.attach_money),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Nominal wajib diisi";
+                  }
+                  if (int.tryParse(value) == null) {
+                    return "Harus berupa angka bulat yang valid";
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Input 3: Kategori Dropdown
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: "Kategori",
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.category),
+                ),
+                items: _categories.map((String category) {
+                  return DropdownMenuItem<String>(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedCategory = newValue!;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _dateController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: "Tanggal Transaksi",
+                  prefixIcon: Icon(Icons.calendar_today),
+                  border: OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.add),
+                    onPressed: _pilihTanggal,
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Tanggal wajib diisi";
+                  }    
+                  if (!RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+                    return 'Format tanggal harus DD/MM/YYYY';
+                  }              
+                  return null;
+                },
+              ),
+              const SizedBox(height: 32),
+              // Tombol Simpan
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber[400],
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onPressed: () async {
+                  // Jalankan validasi
+                  if (_formKey.currentState!.validate()) {
+                    // id user dikirim dari dashboard melalui arguments
+                    final int userId = ModalRoute.of(context)!.settings.arguments as int;
+
+                    // Simpan transaksi ke database
+                    await insertTransaction(
+                      TransactionModel(
+                        userId: userId,
+                        title: _titleController.text,
+                        amount: int.parse(_amountController.text),
+                        category: _selectedCategory,
+                        date: _dateController.text,
+                      ),
+                    );
+                    if (!context.mounted) return;
+
+                    // Jika lolos validasi, tampilkan pop-up SnackBar sukses
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Tersimpan: ${_titleController.text} (Rp ${_amountController.text})',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text(
+                  "Simpan Transaksi",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+    
+  }
+}
